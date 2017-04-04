@@ -1,5 +1,10 @@
 package main
 
+// Question
+// We messed up the organization of our inclass files to get everything up on docker
+// how can we leave the zips.json file where it is and keep the built program either
+// .gitignored or in the bin folder
+
 import (
 	"encoding/json"
 	"fmt"
@@ -54,7 +59,7 @@ func main() {
 		log.Fatal("please set ADDR environment variable")
 	}
 
-	f, err := os.Open("../data/zips.json")
+	f, err := os.Open("./zips.json")
 	if err != nil {
 		log.Fatal("error opening zips file " + err.Error())
 	}
