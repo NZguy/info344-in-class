@@ -123,8 +123,8 @@ func main() {
 		port = defaultPort
 	}
 	addr := fmt.Sprintf("%s:%s", host, port)
-	certPath := os.Getenv("CERTPATH")
-	keyPath := os.Getenv("KEYPATH")
+	certPath := os.Getenv("CERTPATH") // fullchain absolute path
+	keyPath := os.Getenv("KEYPATH")   // privkey absolute path
 
 	zips, err := loadZipsFromCSV("zips.csv")
 

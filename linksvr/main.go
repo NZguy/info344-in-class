@@ -2,13 +2,20 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 
 	"strings"
 
+	"encoding/json"
+
 	"golang.org/x/net/html"
+
+	"time"
+
+	"github.com/go-redis/redis"
 )
 
 const defaultPort = "80"
@@ -68,17 +75,47 @@ func getPageSummary(URL string) (*PageSummary, error) {
 	} //for each token
 } //getPageSummary()
 
+// Setting this as a reciever for all functions allows all functions access to redis
+type HandlerContext struct {
+	redisClient *redis.Client
+}
+
 //SummaryHandler handles the /v1/summary resource
-func SummaryHandler(w http.ResponseWriter, r *http.Request) {
+func (context *HandlerContext) SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	URL := r.FormValue("url")
 	if len(URL) == 0 {
 		http.Error(w, "please supply a `url` query string parameter", http.StatusBadRequest)
 		return
 	}
 
-	//TODO: call getPageSummary() passing URL
-	//marshal struct into JSON, and write it
-	//to the response
+	jsonBuffer, err := context.redisClient.Get(URL).Bytes()
+	if err != nil && err != redis.Nil {
+		http.Error(w, "error getting from cache: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Cacheing data if it didn't already exist in redis
+	if err == redis.Nil {
+		//TODO: call getPageSummary() passing URL
+		//marshal struct into JSON, and write it
+		//to the response
+		pageSummary, err := getPageSummary(URL)
+		if err != nil && err != io.EOF {
+			http.Error(w, "error getting page summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		jsonBuffer, err = json.Marshal(pageSummary)
+		if err != nil {
+			http.Error(w, "error marshaling json: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		context.redisClient.Set(URL, jsonBuffer, time.Second*60)
+	}
+
+	w.Header().Add(headerContentType, contentTypeJSON)
+	w.Write(jsonBuffer)
 }
 
 func main() {
@@ -89,7 +126,15 @@ func main() {
 	}
 	addr := host + ":" + port
 
-	http.HandleFunc("/v1/summary", SummaryHandler)
+	redisOptions := redis.Options{
+		Addr: "localhost:6379", // Go requires that you have a comma at the end
+	}
+	redisClient := redis.NewClient(&redisOptions)
+	handlerContext := &HandlerContext{
+		redisClient: redisClient,
+	}
+
+	http.HandleFunc("/v1/summary", handlerContext.SummaryHandler) // Summary handler will have access to redis client
 
 	fmt.Printf("listening at %s...\n", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
