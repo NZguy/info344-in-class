@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 const usage = `
@@ -21,4 +24,34 @@ func main() {
 		os.Exit(1)
 	}
 
+	cmd := os.Args[1]
+	password := []byte(os.Args[2])
+
+	switch cmd {
+	case "hash":
+		cost, err := strconv.Atoi(os.Args[3])
+		if err != nil {
+			fmt.Println("cost must be an integer")
+			os.Exit(1)
+		}
+		passhash, err := bcrypt.GenerateFromPassword(password, cost)
+		if err != nil {
+			fmt.Printf("error hasning password: %v", err)
+		}
+		fmt.Println(string(passhash))
+	case "verify":
+		passhash := []byte(os.Args[3])
+		err := bcrypt.CompareHashAndPassword(passhash, password)
+		if err != nil {
+			fmt.Println("Invalid Password")
+		} else {
+			fmt.Println("Valid Password")
+		}
+	}
 }
+
+/*
+ * In a real system
+ * If email address doesn't exist, still do the compare algorithem to prevent timing attacks
+ * If user's or ip's password is wrong enough times in a short amount of time, make them wait to try again, can use redis for that
+ */
