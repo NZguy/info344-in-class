@@ -5,5 +5,7 @@ type Store interface {
 	//Insert inserts a NewTask and
 	//returns the fully-populated Task or an error
 	Insert(newtask *NewTask) (*Task, error)
-	Get(ID interface{}) (*Task, error)
+	Get(ID interface{}) (*Task, error) // interface{} means accepts any
+	GetAll() ([]*Task, error)
+	Update(task *Task) error
 }

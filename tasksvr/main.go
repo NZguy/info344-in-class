@@ -38,6 +38,7 @@ func main() {
 	}
 
 	//create handler context
+	// Context used for anything thats commonly used between all handlers like specific implementation of a interface
 	hctx := &handlers.Context{
 		TasksStore: tstore,
 	}
