@@ -36,7 +36,7 @@ func main() {
 		}
 		passhash, err := bcrypt.GenerateFromPassword(password, cost)
 		if err != nil {
-			fmt.Printf("error hasning password: %v", err)
+			fmt.Printf("error hashing password: %v", err)
 		}
 		fmt.Println(string(passhash))
 	case "verify":

@@ -29,7 +29,7 @@ func (ms *MongoStore) Get(ID interface{}) (*Task, error) {
 	// Mongo needs the string ID converted to its version of an object ID
 	// If ID is equal to a string, ok will return true, and sID will be equal to a string version of ID
 	if sID, ok := ID.(string); ok {
-		ID = bson.ObjectIdHex(sID)
+		ID = bson.ObjectIdHex(sID) // Mongo does weird shit with interfaces, it converts interfaces to hex and they must be converted back
 	}
 	task := &Task{}
 	err := ms.Session.DB(ms.DatabaseName).C(ms.CollectionName).FindId(ID).One(task) // we have to tell mongo what struct we want it to fill out
@@ -46,7 +46,7 @@ func (ms *MongoStore) GetAll() ([]*Task, error) {
 }
 
 func (ms *MongoStore) Update(task *Task) error {
-	if sID, ok := task.ID.(string); ok {
+	if sID, ok := task.ID.(string); ok { // Type assertion
 		task.ID = bson.ObjectIdHex(sID)
 	}
 	task.ModifiedAt = time.Now()
