@@ -19,8 +19,8 @@ type Adapter func(http.Handler) http.Handler
 //each, and resetting `handler` to the
 //handler returned from the Adapter func
 func Adapt(handler http.Handler, adapters ...Adapter) http.Handler {
-	for idx := len(adapters) - 1; idx >= 0; idx-- {
-		handler = adapters[idx](handler)
+	for i := len(adapters) - 1; i >= 0; i-- {
+		handler = adapters[i](handler)
 	}
 	return handler
 }

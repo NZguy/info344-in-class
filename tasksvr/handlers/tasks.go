@@ -20,7 +20,7 @@ func (ctx *Context) HandleTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := newtask.Validate(); err != nil {
-			http.Error(w, "error validateing task: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "error validating task: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
