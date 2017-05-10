@@ -1,16 +1,14 @@
 package main
 
 import (
-	"sync"
-
 	"github.com/gorilla/websocket"
 )
 
 //Notifier represents a web sockets notifier
 type Notifier struct {
 	eventq  chan interface{}
+	clientq chan *websocket.Conn
 	clients map[*websocket.Conn]bool
-	mu      sync.RWMutex
 	//TODO: add other fields you might need
 	//such as another channel or a mutex
 	//(either would work)
@@ -25,8 +23,8 @@ func NewNotifier() *Notifier {
 	//a Notifier struct
 	notifier := &Notifier{
 		eventq:  make(chan interface{}),
+		clientq: make(chan *websocket.Conn),
 		clients: make(map[*websocket.Conn]bool),
-		mu:      sync.RWMutex{},
 	}
 
 	return notifier
@@ -42,8 +40,14 @@ func (n *Notifier) Start() {
 	//to the `eventq` channel, and broadcast
 	//them to all of the web socket clients
 	for {
-		event := <-n.eventq
-		n.broadcast(event)
+		select {
+		case event := <-n.eventq:
+			n.broadcast(event)
+		case client := <-n.clientq:
+			n.clients[client] = true
+			go n.readPump(client)
+		}
+
 	}
 	// TODO: Use a switch statement to consume users to add from the user channel
 }
@@ -55,13 +59,9 @@ func (n *Notifier) AddClient(client *websocket.Conn) {
 	//an HTTP handler, and each HTTP request is
 	//processed on its own goroutine, so your
 	//implementation here MUST be safe for concurrent use
-	n.mu.Lock()
-	defer n.mu.Unlock()
+
 	// TODO: Could send this user to a user channel which is consumed by the start function
-
-	n.clients[client] = true
-	go n.readPump(client)
-
+	n.clientq <- client
 }
 
 //Notify will add a new event to the event queue
@@ -97,8 +97,6 @@ func (n *Notifier) broadcast(event interface{}) {
 	//and for even better performance, try using a PreparedMessage:
 	//https://godoc.org/github.com/gorilla/websocket#PreparedMessage
 	//https://godoc.org/github.com/gorilla/websocket#Conn.WritePreparedMessage
-	n.mu.Lock()
-	defer n.mu.Unlock()
 
 	for key, _ := range n.clients {
 		err := key.WriteJSON(event)
