@@ -5,7 +5,7 @@ window.onload = function(){
     form.addEventListener("submit", function(event){
         event.preventDefault();
 
-        fetch("http://138.68.253.36/zips/city/" + city.value)
+        fetch("http://localhost/zips/city/" + city.value)
             .then(function(response){
                 console.log(response);
                 return response.json();
